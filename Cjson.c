@@ -51,14 +51,14 @@ JsonKey jsonKeysList[i]
 }
 int parseNotification(const char *const notifStr)
 {
-    
+    // This will caculates the total length of jsonkeylist
     int numKeys = sizeof(jsonKeysList) / sizeof(jsonKeysList[0]);
 
     for (int i = 0; i < numKeys; i++)
     {
         const char *key = jsonKeysList[i].key;
         const char *value = strstr(notifStr, key);
-
+     
         if (value != NULL)
         {
             value += strlen(key) + 3;               
@@ -70,7 +70,7 @@ int parseNotification(const char *const notifStr)
                 ((char *)jsonKeysList[i].value)[jsonKeysList[i].maxLength - 1] = '\0';
             }
 
-            
+            // These code will create in c code
             else  (jsonKeysList[i].type == TYPE_INT)
             {
                 int intValue = atoi(value);
