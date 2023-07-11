@@ -51,7 +51,7 @@ JsonKey jsonKeysList[i]
 }
 int parseNotification(const char *const notifStr)
 {
-    // This will caculates the total length of jsonkeylist
+    // This will caculates the total length of jsonkeylists
     int numKeys = sizeof(jsonKeysList) / sizeof(jsonKeysList[0]);
 
     for (int i = 0; i < numKeys; i++)
