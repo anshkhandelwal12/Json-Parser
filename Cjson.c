@@ -1,94 +1,120 @@
-#include JsonPaser.h
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include "cJson.h";
+#include "cJSON.c";
 
-/*
-Notifications strings examples:
-Login: { "ID":1,"UN":"John Doe", “SN”:”victor”, "DT":"02/08/2022", "TM":"12:01:06" }
-Logout: { "ID":1,"UN":null }
-Mon command-1: { "ID":2, "CMON": 4, “CCAMN”:”Training Room”, “NCAMN”:”Training Room Corridor”, “LCAMN”:”Rear Stairwell” }
-Mon command-2: { "ID":2, "CMON": 4,"CCAM": 1027, “CCAMN”:null, “NCAMN”:”Training Room Corridor”, “LCAMN”:”Rear Stairwell” }
-Cam notification: { "ID":3, "CMON": 4, “CCAMN”:”Training Room”, “NCAMN”:”Training Room Corridor”, “LCAMN”:”Rear Stairwell” }
-Play notification: {"ID":4,"RM":"Training Room Rear","PMON":127,"PCAM":1009,"DT":"02/08/2022","TM":"12:01:06","TZ":"EST"}
-Error: {"ID":5,"ERR":1}
-*/
+typedef enum {
+    TYPE_STR,
+    TYPE_INT
+} ValueType;
 
-NotificationParams noitifParams = {0};
+typedef struct {
+    const char* key;
+    ValueType type;
+    int maxLength;
+    void* value;
+} JsonKey;
 
-JsonKey jsonKeysList[i]
-{
-    // To be populated based on JSON notifications strings
-    {"CCAMN", TYPE_STR, CURRENT_CAM_NAME_MAXCHR_LIMIT, noitifParams.currentCamName}, // CURRENT CAM NAME KEY
-        /* Above example means 'If key name "CCAMN" is present in JSON:
-            - Parse it's value in string form
-            - Max lenght of value can be CURRENT_CAM_NAME_MAXCHR_LIMIT bytes
-            - Store value in variable
-        */
-        {"CMON", TYPE_INT, 0, &noitifParams.currentMon},
-        // Add items to this list based on the unique keys for all notifications
-        {"PCAM", TYPE_STR, PREV_CAM_NAME_MAXCHR_LIMIT, notifParams.prevCamName}, // Pervious Name Key
+typedef struct {
+    int notificationId;
+    char userName[50];
+    char timeZone[50];
+    char currentCamName[50];
+    int currentMon;
+    char nextCamName[50];
+    int currentCam;
+    int playbackMon;
+    char roomName[50];
+    int errorCode;
+    int playbackCam;
+    char prevCamName[50];
+} NotificationParams;
 
-        {"NCAMN", TYPE_STR, NEXT_CAM_NAME_MAXCHAR_LIMIT, notifParams.nextCamName}, // NextName Key
+void parseNotification(const char* notification, JsonKey jsonKeysList[], int numKeys) {
+    cJSON* root = cJSON_Parse(notification);
+    if (root == NULL) {
+        printf("No Notification List found\n");
+        return;
+    }
 
-        //"LCMAN" ,  TYPE_STR  // LastName Key
-        {"SN", TYPE_STR, USERNAME_MAXCHAR_LINIT, notifParams.userName}, // USERNAME KEY
 
-        {"ID", TYPE_INT, 0, &notifParams.notificationId}, // ID KEY
 
-        {"RM", TYPE_STR, ROOM_NAME_MAXCHAR_LIMIT, notifParams.roomName}, // ROOMNAME KEY
+    for (int i = 0; i < numKeys; i++) {
 
-        {"PMON", TYPE_INT, 0, &notifParams.currentMon},
+        const char* key = jsonKeysList[i].key;
 
-        {"CCAM", TYPE_INT, 0, &notifParams.currentCam},
+        cJSON* value = cJSON_GetObjectItemCaseSensitive(root, key);
+        if (value != NULL) {
+            if (jsonKeysList[i].type == TYPE_INT) {
 
-        {"TM", TYPE_INT, 0, notifParams.time}, // TIME KEY
+                if (cJSON_IsNumber(value)) {
+                    int intValue = value->valueint;
+                    *((int*)jsonKeysList[i].value) = intValue;
+                }
+            } else if (jsonKeysList[i].type == TYPE_STR) {
 
-        {"TZ", TYPE_STR, TIMEZONE_TZ_TIMEZONE_MAXCHAR_LIMIT, notifParams.timeZone}, // TIMEZONE KEY
+                if (cJSON_IsString(value)) {
+                    const char* strValue = value->valuestring;
 
-        {"DT", TYPE_INT, 0, notifiParamas.date}, // DATE KEY
+                    int maxLength = jsonKeysList[i].maxLength;
 
-    {
-        "ERR", TYPE_INT, 0, &notifParamas.errorcode
-    } // ERRORCODE KEY
-}
-int parseNotification(const char *const notifStr)
-{
-    // This will caculates the total length of jsonkeylist
-    int numKeys = sizeof(jsonKeysList) / sizeof(jsonKeysList[0]);
-
-    for (int i = 0; i < numKeys; i++)
-    {
-        const char *key = jsonKeysList[i].key;
-        const char *value = strstr(notifStr, key);
-     
-        if (value != NULL)
-        {
-            value += strlen(key) + 3;               
-            int valueLength = strcspn(value, "\""); 
-            // Checking the string vaules in theese function
-            if (jsonKeysList[i].type == TYPE_STR)
-            {
-                strncpy((char *)jsonKeysList[i].value, value, jsonKeysList[i].maxLength - 1);
-                ((char *)jsonKeysList[i].value)[jsonKeysList[i].maxLength - 1] = '\0';
+                    strncpy((char*)jsonKeysList[i].value, strValue, maxLength);
+                    ((char*)jsonKeysList[i].value)[maxLength] = '\0';
+                }
             }
-
-            // These code will create in c code
-            else  (jsonKeysList[i].type == TYPE_INT)
-            {
-                int intValue = atoi(value);
-                *(int *)jsonKeysList[i].value = intValue;
-            
-        }
-        else{
-            printf(" Key Not found");
         }
     }
 
-    return 0;
 }
 
-int main()
-{
-    parseNotification(char, notifStr);
+int main() {
+    NotificationParams noitifParams;
+
+    JsonKey jsonKeysList[] = {
+        {"ID", TYPE_INT, 0, &noitifParams.notificationId},
+        {"UN", TYPE_STR, 50, noitifParams.userName},
+        {"TZ", TYPE_STR, 50, noitifParams.timeZone},
+        {"CCAMN", TYPE_STR, 50, noitifParams.currentCamName},
+        {"CMON", TYPE_INT, 0, &noitifParams.currentMon},
+        {"NCAMN", TYPE_STR, 50, noitifParams.nextCamName},
+        {"CCAM", TYPE_INT, 0, &noitifParams.currentCam},
+        {"PMON", TYPE_INT, 0, &noitifParams.playbackMon},
+        {"RM", TYPE_STR, 50, noitifParams.roomName},
+        {"ERR", TYPE_INT, 0, &noitifParams.errorCode},
+        {"PCAM", TYPE_INT, 0, &noitifParams.playbackCam},
+        {"PCAMN", TYPE_STR, 50, noitifParams.prevCamName}
+    };
+    int numKeys = sizeof(jsonKeysList) / sizeof(JsonKey);
+
+    const char* notification = "{\"ID\": 1, \"UN\": \"John Doe\", \"TZ\": \"12:02:06\"}";
+    
+    parseNotification(notification, jsonKeysList, numKeys);
+    //printf("numkeys: %d \n , notification : %s\n", numKeys, notification);
+
+    printf("ID: %d\n", noitifParams.notificationId);
+    printf("UN: %s\n", noitifParams.userName);
+    printf("TZ: %s\n", noitifParams.timeZone);
+
+    notification = "{\"ID\": 1, \"UN\": \"null\"}";
+
+    parseNotification(notification, jsonKeysList, numKeys);
+  //  printf("numkeys: %d\n, notification : %s\n", numKeys, notification);
+
+    printf("ID: %d\n", noitifParams.notificationId);
+    printf("UN: %s\n", noitifParams.userName);
+
+    notification = "{\"ID\": 2, \"CMON\": 4, \"CCAMN\": \"Training Room\", \"NCAMN\": \"Training Room Corridor\", \"PCAMN\": \"Rear Stairwell\"}";
+   // printf("numkeys: %d \n, notification : %s\n", numKeys, notification);
+
+    parseNotification(notification, jsonKeysList, numKeys);
+
+    printf("ID: %d\n", noitifParams.notificationId);
+    printf("CMON: %d\n", noitifParams.currentMon);
+    printf("CCAMN: %s\n", noitifParams.currentCamName);
+    printf("NCAMN: %s\n", noitifParams.nextCamName);
+    printf("PCAMN: %s\n", noitifParams.prevCamName);
+
     return 0;
 }
-
-// #endif //__JSON_PARSER_H__
